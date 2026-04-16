@@ -1,0 +1,25 @@
+{
+  "run": {
+    "years": [2022],
+    "level_geo": ["provincia", "departamento"],
+    "level_activity": "clae2",
+    "include_gender_module": true,
+    "scale_method": "zscore",
+    "cluster_method": "kmeans",
+    "k_min": 2,
+    "k_max": 8,
+    "random_seed": 123,
+    "min_obs_per_geo": 1,
+    "min_obs_per_activity": 1
+  },
+  "paths": {
+    "raw_estab": "Establecimientos_por_departamento_y_actividad.csv",
+    "raw_gender": "Datos_por_departamento_actividad_y_sexo.csv",
+    "dim_geo": "codigo_departamento_provincia.csv",
+    "dim_activity": "actividades_establecimientos.csv",
+    "curated_dir": "pipeline/output/curated",
+    "marts_dir": "pipeline/output/marts",
+    "clusters_dir": "pipeline/output/clusters",
+    "quality_dir": "pipeline/output/quality"
+  }
+}
