@@ -19,11 +19,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--ipc", required=True, help="Ruta IPC (csv/xlsx)")
     p.add_argument("--outdir", default="outputs", help="Carpeta de salida")
     p.add_argument("--anio", type=int, default=None, help="Filtrar procesamiento a un único año (ej: 2022)")
+
     p.add_argument(
         "--sectores-esperados",
         default="A,B,C,D,E,F,G",
         help="Lista de letras esperadas separadas por coma para controlar cobertura sectorial",
     )
+=======
+
     return p.parse_args()
 
 
@@ -119,7 +122,10 @@ def main() -> None:
 
     sal_rows = read_csv_rows(Path(args.salarios))
     ipc = read_ipc(Path(args.ipc))
+
     sectores_esperados = [s.strip().upper() for s in str(args.sectores_esperados).split(",") if s.strip()]
+=======
+
 
     required = {"periodo", "id_prov", "sector", "salarios"}
     if not sal_rows:
@@ -186,6 +192,7 @@ def main() -> None:
         sal_const_vals = [x["salario_const"] for x in rows if not math.isnan(x["salario_const"])]
         n_meses = len(sal_const_vals)
         promedio = safe_mean(sal_const_vals)
+
         numerador_pond = 0.0
         denominador_pond = 0.0
         for x in rows:
@@ -195,19 +202,26 @@ def main() -> None:
                 numerador_pond += sc * emp
                 denominador_pond += emp
         promedio_pond = (numerador_pond / denominador_pond) if denominador_pond > 0 else math.nan
+=======
+
         row = {
             "id_prov": id_prov,
             "actividad_2d": actividad_2d,
             "anio": anio,
             "n_meses_observados": n_meses,
             "salario_promedio_anual_const": promedio,
+
             "salario_promedio_anual_pond_const": promedio_pond,
             "denominador_pond_anual": denominador_pond,
             "flag_cobertura_mensual_baja": n_meses < 6,
             "flag_ponderado_sin_muestra": denominador_pond <= 0,
+=======
+            "flag_cobertura_mensual_baja": n_meses < 6,
+
         }
         if n_meses >= 6:
             annual.append(row)
+
 
     # Diagnóstico sector-año para detectar ceros y baja muestra.
     sector_anio: Dict[Tuple[int, str], Dict[str, object]] = {}
@@ -250,6 +264,8 @@ def main() -> None:
         }
         sector_anio_rows.append(row)
 
+=======
+
     total = len(monthly) or 1
     pct_ceros = sum(1 for r in monthly if r["salario_const"] == 0) / total
     pct_nan_pre = sum(1 for r in monthly if math.isnan(r["salario_const"])) / total
@@ -272,6 +288,7 @@ def main() -> None:
             "ipc_nulos": sum(1 for r in monthly if math.isnan(r["IPC"])),
             "filas_mensuales": len(monthly),
             "filas_anuales_validas": len(annual),
+
             "sectores_esperados": sectores_esperados,
         }
     }
@@ -299,6 +316,9 @@ def main() -> None:
         quality["salarios"]["sectores_faltantes_anio_objetivo"] = sectores_faltantes
         quality["salarios"]["sectores_con_salario_anual_cero_anio_objetivo"] = sectores_anio_cero
         quality["salarios"]["sectores_con_baja_muestra_anio_objetivo"] = sectores_baja_muestra
+=======
+        }
+
 
     write_csv(
         outdir / "salarios_mensual_clean.csv",
@@ -331,6 +351,7 @@ def main() -> None:
             "anio",
             "n_meses_observados",
             "salario_promedio_anual_const",
+
             "salario_promedio_anual_pond_const",
             "denominador_pond_anual",
             "flag_cobertura_mensual_baja",
@@ -350,6 +371,9 @@ def main() -> None:
             "n_periodos_distintos",
             "n_provincias_distintas",
             "flag_muestra_baja",
+=======
+            "flag_cobertura_mensual_baja",
+
         ],
     )
     (outdir / "quality_ingesta.json").write_text(json.dumps(quality, ensure_ascii=False, indent=2), encoding="utf-8")

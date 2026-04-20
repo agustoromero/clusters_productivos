@@ -31,7 +31,10 @@ python scripts/execute_salarios_e2e.py \
 - `outputs/salarios_mensual_clean.csv`
 - `outputs/salarios_anual_prov_actividad2d.csv`
 - `outputs/quality_ingesta.json`
+
 - `outputs/quality_sector_anio.csv`
+=======
+
 
 ## 3) Resumen rápido
 
@@ -46,9 +49,12 @@ print('pct_nan_salario_nominal_post_merge:', q['pct_nan_salario_nominal_post_mer
 print('pct_grupos_empleo_sum_cero:', q['pct_grupos_empleo_sum_cero'])
 print('sectores_cubiertos:', q['sectores_cubiertos'])
 print('anios_cubiertos:', q['anios_cubiertos'])
+
 print('sectores_presentes_anio_objetivo:', q.get('sectores_presentes_anio_objetivo'))
 print('sectores_faltantes_anio_objetivo:', q.get('sectores_faltantes_anio_objetivo'))
 print('sectores_con_salario_anual_cero_anio_objetivo:', q.get('sectores_con_salario_anual_cero_anio_objetivo'))
+=======
+
 PY
 ```
 
