@@ -2,7 +2,7 @@
   "run": {
     "years": [2022],
     "level_geo": ["provincia", "departamento"],
-    "level_activity": "clae2",
+    "level_activity": "letra",
     "include_gender_module": true,
     "scale_method": "zscore",
     "cluster_method": "kmeans",

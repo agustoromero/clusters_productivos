@@ -1,7 +1,7 @@
 {
   "level_geo": "departamento",
-  "k_optimo": 2,
-  "silhouette": 0.371895,
+  "k_optimo": 3,
+  "silhouette": 0.369519,
   "n_territorios": 527,
   "features": [
     "empleo_total",

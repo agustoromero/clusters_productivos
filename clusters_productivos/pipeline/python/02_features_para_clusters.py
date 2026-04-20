@@ -3,6 +3,7 @@ import csv
 import json
 import os
 from collections import defaultdict
+import pandas as pd
 
 CONFIG_PATH = "pipeline/config/params.json"
 
@@ -40,6 +41,51 @@ def to_float(v):
         return 0.0
 
 
+def load_empleo_promedios(series_path, level_geo, level_activity, years):
+    """Load and calculate average employment by geo-sector-year"""
+    try:
+        df = pd.read_csv(series_path, sep=';', encoding='latin-1')
+        df['anio'] = df['Periodo'].astype(str).str[:4]
+        df['mes'] = df['Periodo'].astype(str).str[4:]
+        df = df[df['anio'].isin([str(y) for y in years])]
+        
+        # Map sectors to letters
+        sector_mapping = {
+            'agricultura, ganaderia y pesca': 'A',
+            'comercio': 'G',
+            'construccion': 'F',
+            'electricidad, gas y agua': 'D',
+            'explotacion de minas y canteras': 'B',
+            'industria manufacturera': 'C',
+            'servicios': 'N'
+        }
+        df['letra'] = df['Sector'].str.lower().map(sector_mapping)
+        df = df.dropna(subset=['letra'])
+        
+        # Calculate monthly averages by geo-sector-month
+        if level_geo == "provincia":
+            geo_cols = ['id_prov']
+        else:
+            geo_cols = ['id_prov', 'id_depto']
+        
+        monthly_avg = df.groupby(geo_cols + ['letra', 'mes'])['Empleo'].mean().reset_index()
+        # Annual average
+        annual_avg = monthly_avg.groupby(geo_cols + ['letra'])['Empleo'].mean().reset_index()
+        
+        # Create dict
+        promedios = {}
+        for _, row in annual_avg.iterrows():
+            if level_geo == "provincia":
+                key = (int(row['id_prov']), row['letra'])
+            else:
+                key = (int(row['id_prov']), int(row['id_depto']), row['letra'])
+            promedios[key] = row['Empleo']
+        return promedios
+    except Exception as e:
+        print(f"Error loading empleo promedios: {e}")
+        return {}
+
+
 def geo_key(row, level_geo):
     if level_geo == "provincia":
         return (to_int(row["provincia_id"]), row["provincia"])
@@ -51,7 +97,7 @@ def geo_key(row, level_geo):
     )
 
 
-def build_features(estab_rows, level_geo, level_activity):
+def build_features(estab_rows, level_geo, level_activity, empleo_promedios):
     by_cell = defaultdict(lambda: {"empleo": 0.0, "establecimientos": 0.0, "exportadoras": 0.0, "salario_promedio_anual_deflactado": 0.0, "meses_completos": 0})
     totals = defaultdict(lambda: {"empleo": 0.0, "establecimientos": 0.0, "exportadoras": 0.0})
 
@@ -61,7 +107,7 @@ def build_features(estab_rows, level_geo, level_activity):
         by_cell[k]["empleo"] += to_float(r["empleo"])
         by_cell[k]["establecimientos"] += to_float(r["establecimientos"])
         by_cell[k]["exportadoras"] += to_float(r["empresas_exportadoras"])
-        by_cell[k]["salario_promedio_anual_deflactado"] += to_float(r.get("salario_promedio_anual_deflactado", 0.0))
+        by_cell[k]["salario_promedio_anual_deflactado"] = max(by_cell[k]["salario_promedio_anual_deflactado"], to_float(r.get("salario_promedio_anual_deflactado", 0.0)))
         by_cell[k]["meses_completos"] += to_int(r.get("meses_completos", 0))
 
         tk = (to_int(r["anio"]),) + g
@@ -80,6 +126,10 @@ def build_features(estab_rows, level_geo, level_activity):
         empleo_total = total["empleo"]
         estab_total = total["establecimientos"]
 
+        # Obtener promedio de empleo por sector desde empleo_promedios
+        geo_id = g[0] if level_geo == "provincia" else (g[0], g[2])  # provincia_id o (provincia_id, in_departamentos)
+        prom_empleo_sector = empleo_promedios.get((geo_id, activity), 0.0)
+
         row = {
             "anio": anio,
             level_activity: activity,
@@ -92,7 +142,8 @@ def build_features(estab_rows, level_geo, level_activity):
             "establecimientos_total_geo": round(estab_total, 4),
             "share_empleo": round(vals["empleo"] / empleo_total, 8) if empleo_total else 0.0,
             "densidad_estab": round(vals["establecimientos"] / vals["empleo"], 8) if vals["empleo"] else 0.0,
-            "intensidad_export": round(vals["exportadoras"] / vals["establecimientos"], 8) if vals["establecimientos"] else 0.0
+            "intensidad_export": round(vals["exportadoras"] / vals["establecimientos"], 8) if vals["establecimientos"] else 0.0,
+            "promedio_empleo_sector": round(prom_empleo_sector, 2)
         }
 
         if level_geo == "provincia":
@@ -170,9 +221,15 @@ def main():
     gender = read_csv(os.path.join(cfg["paths"]["curated_dir"], "gender_curado.csv"))
 
     level_activity = cfg["run"]["level_activity"]
+    years = cfg["run"]["years"]
+
+    # Load empleo promedios
+    empleo_promedios = load_empleo_promedios(cfg["paths"]["raw_series"], "provincia", level_activity, years)  # For provincia
+    empleo_promedios_depto = load_empleo_promedios(cfg["paths"]["raw_series"], "departamento", level_activity, years)  # For departamento
 
     for level_geo in cfg["run"]["level_geo"]:
-        feats = build_features(estab, level_geo, level_activity)
+        prom = empleo_promedios if level_geo == "provincia" else empleo_promedios_depto
+        feats = build_features(estab, level_geo, level_activity, prom)
         fpath = os.path.join(cfg["paths"]["marts_dir"], f"features_{level_geo}.csv")
         write_csv(fpath, feats)
 
