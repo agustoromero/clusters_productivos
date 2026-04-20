@@ -1,0 +1,4 @@
+cluster,n_territorios,empleo_total_prom,establecimientos_total_prom,exportadoras_total_prom,hhi_prom,diversidad_sectorial_prom,max_share_sector_prom,intensidad_export_prom_prom,densidad_estab_prom_prom,salario_promedio_ponderado_prom
+1,371,7397.393531,1213.924528,51.84097,0.187477,17.167116,0.322126,0.046152,0.345036,98923.952722
+2,119,729.504202,103.369748,6.201681,0.421391,9.932773,0.580366,0.07921,0.505842,47193.850168
+3,37,101735.27027,13325.702703,636.0,0.130152,20.027027,0.238578,0.063566,0.205808,199809.515946

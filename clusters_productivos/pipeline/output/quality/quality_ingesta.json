@@ -1,0 +1,58 @@
+{
+  "run_timestamp_utc": "2026-04-20T19:08:17.593975Z",
+  "years": [
+    2022
+  ],
+  "counts": {
+    "estab_raw": 195370,
+    "estab_curado": 98924,
+    "gender_raw": 316697,
+    "gender_curado": 160481,
+    "series_raw": 151824,
+    "salarios_agregados": 16
+  },
+  "duplicates": {
+    "estab_grain_anio_depto_clae6": 0,
+    "gender_grain_anio_depto_clae6_genero": 0
+  },
+  "null_share_estab": {
+    "provincia_id": 0.0,
+    "in_departamentos": 0.0,
+    "clae2": 0.0,
+    "salario_promedio_anual_deflactado": 0.0
+  },
+  "salarios_coverage": {
+    "provincias_con_salarios": 6,
+    "sectores_con_salarios": 7,
+    "años_con_salarios": 1,
+    "total_provincia_sector_año": 16,
+    "ipc_coverage_years": [
+      2003,
+      2004,
+      2005,
+      2006,
+      2007,
+      2008,
+      2009,
+      2010,
+      2011,
+      2012,
+      2013,
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2020,
+      2021
+    ],
+    "deflactacion_stats": {
+      "ipc_min": 7.200013353463506,
+      "ipc_max": 536.5423,
+      "ipc_mean": NaN,
+      "salarios_deflactados_count": 16,
+      "salarios_no_deflactados": 0
+    }
+  }
+}
