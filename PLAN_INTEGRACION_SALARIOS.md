@@ -301,6 +301,8 @@ Mapear todo “Servicios” a una sola letra (por ejemplo `N`) es insuficiente y
 }
 ```
 
+
+=======
 =======
 # Plan de Integración: Incorporación de Salarios a Clusters Productivos
 
@@ -404,3 +406,4 @@ def aggregate_salarios_by_sector_provincia_anio(series_data, ipc_data, sector_ma
 - Reporte de calidad de match sectorial
 - Resultados de clusters con nueva variable
 - Documentación técnica actualizada
+

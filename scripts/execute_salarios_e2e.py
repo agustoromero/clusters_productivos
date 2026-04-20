@@ -19,6 +19,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--ipc", required=True, help="Ruta IPC (csv/xlsx)")
     p.add_argument("--outdir", default="outputs", help="Carpeta de salida")
     p.add_argument("--anio", type=int, default=None, help="Filtrar procesamiento a un único año (ej: 2022)")
+
+    p.add_argument(
+        "--sectores-esperados",
+        default="A,B,C,D,E,F,G",
+        help="Lista de letras esperadas separadas por coma para controlar cobertura sectorial",
+    )
+=======
+
     return p.parse_args()
 
 
@@ -115,6 +123,10 @@ def main() -> None:
     sal_rows = read_csv_rows(Path(args.salarios))
     ipc = read_ipc(Path(args.ipc))
 
+    sectores_esperados = [s.strip().upper() for s in str(args.sectores_esperados).split(",") if s.strip()]
+=======
+
+
     required = {"periodo", "id_prov", "sector", "salarios"}
     if not sal_rows:
         raise RuntimeError("CSV salarios sin filas")
@@ -180,16 +192,79 @@ def main() -> None:
         sal_const_vals = [x["salario_const"] for x in rows if not math.isnan(x["salario_const"])]
         n_meses = len(sal_const_vals)
         promedio = safe_mean(sal_const_vals)
+
+        numerador_pond = 0.0
+        denominador_pond = 0.0
+        for x in rows:
+            sc = x["salario_const"]
+            emp = x["empleo"]
+            if not math.isnan(sc) and not math.isnan(emp) and emp > 0:
+                numerador_pond += sc * emp
+                denominador_pond += emp
+        promedio_pond = (numerador_pond / denominador_pond) if denominador_pond > 0 else math.nan
+=======
+
         row = {
             "id_prov": id_prov,
             "actividad_2d": actividad_2d,
             "anio": anio,
             "n_meses_observados": n_meses,
             "salario_promedio_anual_const": promedio,
+
+            "salario_promedio_anual_pond_const": promedio_pond,
+            "denominador_pond_anual": denominador_pond,
             "flag_cobertura_mensual_baja": n_meses < 6,
+            "flag_ponderado_sin_muestra": denominador_pond <= 0,
+=======
+            "flag_cobertura_mensual_baja": n_meses < 6,
+
         }
         if n_meses >= 6:
             annual.append(row)
+
+
+    # Diagnóstico sector-año para detectar ceros y baja muestra.
+    sector_anio: Dict[Tuple[int, str], Dict[str, object]] = {}
+    for r in monthly:
+        key = (r["anio"], r["actividad_2d"])
+        if key not in sector_anio:
+            sector_anio[key] = {
+                "anio": r["anio"],
+                "actividad_2d": r["actividad_2d"],
+                "n_filas": 0,
+                "n_salario_const_validos": 0,
+                "n_salario_const_cero": 0,
+                "periodos": set(),
+                "provincias": set(),
+            }
+        info = sector_anio[key]
+        info["n_filas"] += 1
+        info["periodos"].add(r["periodo"])
+        info["provincias"].add(r["id_prov"])
+        if not math.isnan(r["salario_const"]):
+            info["n_salario_const_validos"] += 1
+            if r["salario_const"] == 0:
+                info["n_salario_const_cero"] += 1
+
+    sector_anio_rows: List[Dict[str, object]] = []
+    for _, info in sorted(sector_anio.items(), key=lambda x: (x[0][0], x[0][1])):
+        n_valid = info["n_salario_const_validos"]
+        n_zero = info["n_salario_const_cero"]
+        pct_zero = (n_zero / n_valid) if n_valid else math.nan
+        row = {
+            "anio": info["anio"],
+            "actividad_2d": info["actividad_2d"],
+            "n_filas": info["n_filas"],
+            "n_salario_const_validos": n_valid,
+            "n_salario_const_cero": n_zero,
+            "pct_salario_const_cero": pct_zero,
+            "n_periodos_distintos": len(info["periodos"]),
+            "n_provincias_distintas": len(info["provincias"]),
+            "flag_muestra_baja": len(info["periodos"]) < 6,
+        }
+        sector_anio_rows.append(row)
+
+=======
 
     total = len(monthly) or 1
     pct_ceros = sum(1 for r in monthly if r["salario_const"] == 0) / total
@@ -213,8 +288,37 @@ def main() -> None:
             "ipc_nulos": sum(1 for r in monthly if math.isnan(r["IPC"])),
             "filas_mensuales": len(monthly),
             "filas_anuales_validas": len(annual),
+
+            "sectores_esperados": sectores_esperados,
         }
     }
+    if args.anio is not None:
+        sectores_presentes = sorted(
+            {r["actividad_2d"] for r in sector_anio_rows if r["anio"] == args.anio and r["actividad_2d"]}
+        )
+        sectores_faltantes = sorted([s for s in sectores_esperados if s not in sectores_presentes])
+        sectores_anio_cero = sorted(
+            {
+                r["actividad_2d"]
+                for r in annual
+                if r["anio"] == args.anio and not math.isnan(r["salario_promedio_anual_const"]) and r["salario_promedio_anual_const"] == 0
+            }
+        )
+        sectores_baja_muestra = sorted(
+            {
+                r["actividad_2d"]
+                for r in sector_anio_rows
+                if r["anio"] == args.anio and r["flag_muestra_baja"]
+            }
+        )
+        quality["salarios"]["anio_objetivo"] = args.anio
+        quality["salarios"]["sectores_presentes_anio_objetivo"] = sectores_presentes
+        quality["salarios"]["sectores_faltantes_anio_objetivo"] = sectores_faltantes
+        quality["salarios"]["sectores_con_salario_anual_cero_anio_objetivo"] = sectores_anio_cero
+        quality["salarios"]["sectores_con_baja_muestra_anio_objetivo"] = sectores_baja_muestra
+=======
+        }
+
 
     write_csv(
         outdir / "salarios_mensual_clean.csv",
@@ -247,7 +351,29 @@ def main() -> None:
             "anio",
             "n_meses_observados",
             "salario_promedio_anual_const",
+
+            "salario_promedio_anual_pond_const",
+            "denominador_pond_anual",
             "flag_cobertura_mensual_baja",
+            "flag_ponderado_sin_muestra",
+        ],
+    )
+    write_csv(
+        outdir / "quality_sector_anio.csv",
+        sector_anio_rows,
+        [
+            "anio",
+            "actividad_2d",
+            "n_filas",
+            "n_salario_const_validos",
+            "n_salario_const_cero",
+            "pct_salario_const_cero",
+            "n_periodos_distintos",
+            "n_provincias_distintas",
+            "flag_muestra_baja",
+=======
+            "flag_cobertura_mensual_baja",
+
         ],
     )
     (outdir / "quality_ingesta.json").write_text(json.dumps(quality, ensure_ascii=False, indent=2), encoding="utf-8")
