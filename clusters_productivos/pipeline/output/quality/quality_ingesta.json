@@ -1,0 +1,23 @@
+{
+  "run_timestamp_utc": "2026-04-20T16:22:04.466038Z",
+  "years": [
+    2022
+  ],
+  "counts": {
+    "estab_raw": 195370,
+    "estab_curado": 98924,
+    "gender_raw": 316697,
+    "gender_curado": 160481,
+    "series_raw": 151824
+  },
+  "duplicates": {
+    "estab_grain_anio_depto_clae6": 0,
+    "gender_grain_anio_depto_clae6_genero": 0
+  },
+  "null_share_estab": {
+    "provincia_id": 0.0,
+    "in_departamentos": 0.0,
+    "clae2": 0.0,
+    "salario_promedio_anual_deflactado": 0.0
+  }
+}

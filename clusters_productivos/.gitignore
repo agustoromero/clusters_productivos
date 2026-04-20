@@ -1,0 +1,13 @@
+# Archivos temporales de Microsoft Office
+~$*.xlsx
+~$*.xls
+~$*.docx
+~$*.doc
+
+# Archivos temporales de Windows
+*.tmp
+~*.tmp
+
+# Archivos de backup
+*.bak
+*~
