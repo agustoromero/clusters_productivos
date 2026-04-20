@@ -168,6 +168,8 @@ def aggregate_for_clustering(feature_rows, level_geo):
         "max_share": 0.0,
         "intensidad_export_sum": 0.0,
         "densidad_estab_sum": 0.0,
+        "salario_ponderado_sum": 0.0,
+        "empleo_con_salario": 0.0,
         "n_actividades": 0,
         "top_clae2": None,
         "top_share": -1.0
@@ -185,6 +187,7 @@ def aggregate_for_clustering(feature_rows, level_geo):
         expo = to_float(r["exportadoras"])
         intensidad = to_float(r["intensidad_export"])
         densidad = to_float(r["densidad_estab"])
+        salario = to_float(r["salario_promedio_anual_deflactado"])
         clae2 = str(r["clae2"])
 
         s = geo_stats[g]
@@ -201,10 +204,19 @@ def aggregate_for_clustering(feature_rows, level_geo):
         if share > s["top_share"]:
             s["top_share"] = share
             s["top_clae2"] = clae2
+        
+        # Agregar salario ponderado por empleo
+        if salario > 0 and empleo > 0:
+            s["salario_ponderado_sum"] += salario * empleo
+            s["empleo_con_salario"] += empleo
 
     out = []
     for g, s in geo_stats.items():
         n = s["n_actividades"] if s["n_actividades"] else 1
+        salario_promedio_ponderado = 0.0
+        if s["empleo_con_salario"] > 0:
+            salario_promedio_ponderado = s["salario_ponderado_sum"] / s["empleo_con_salario"]
+        
         row = {
             "empleo_total": round(s["empleo_total"], 4),
             "establecimientos_total": round(s["establecimientos_total"], 4),
@@ -214,6 +226,7 @@ def aggregate_for_clustering(feature_rows, level_geo):
             "max_share_sector": round(s["max_share"], 8),
             "intensidad_export_prom": round(s["intensidad_export_sum"] / n, 8),
             "densidad_estab_prom": round(s["densidad_estab_sum"] / n, 8),
+            "salario_promedio_ponderado": round(salario_promedio_ponderado, 2),
             "top_clae2": s["top_clae2"]
         }
         if level_geo == "provincia":
@@ -255,7 +268,8 @@ def main():
         "diversidad_sectorial",
         "max_share_sector",
         "intensidad_export_prom",
-        "densidad_estab_prom"
+        "densidad_estab_prom",
+        "salario_promedio_ponderado"
     ]
 
     for level_geo in cfg["run"]["level_geo"]:

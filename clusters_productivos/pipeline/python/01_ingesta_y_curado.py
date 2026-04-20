@@ -59,42 +59,25 @@ def load_ipc_data(ipc_path):
 
 def create_sector_mapping(sector_dim_path):
     """Create mapping from sector descriptions to CLAE 2-digit codes"""
-    try:
-        df = pd.read_excel(sector_dim_path)
-        # Columns: 'ClaNAE 2010', 'DESCRIPCIÓN DE LA ACTIVIDAD', 'CIIU-4'
-        mapping = defaultdict(list)
-        for _, row in df.iterrows():
-            desc = normalize_text(row.get('DESCRIPCIÓN DE LA ACTIVIDAD', '')).lower()
-            clae_full = normalize_text(row.get('ClaNAE 2010', ''))
-            
-            # Extract 2-digit CLAE code
-            if len(clae_full) >= 2 and clae_full[:2].isdigit():
-                clae2 = clae_full[:2]
-                if desc:
-                    mapping[desc].append(clae2)
-        
-        return mapping
-    except Exception as e:
-        print(f"Error loading sector dimension: {e}")
-        return {}
+    # Manual mapping based on standard sector classifications
+    manual_mapping = {
+        'agricultura, ganaderia y pesca': '01',
+        'comercio': '47',  # Comercio al por mayor y menor
+        'construccion': '41',  # Construcción de edificios
+        'electricidad, gas y agua': '35',  # Suministro de electricidad y gas
+        'explotacion de minas y canteras': '08',  # Otras actividades de extracción
+        'industria manufacturera': '10',  # Industria alimentaria
+        'servicios': '62',  # Programación y consultoría
+        'sin rama': None
+    }
+    
+    return manual_mapping
 
 
 def match_sector_to_clae2(sector_desc, sector_mapping):
-    """Match sector description to CLAE 2-digit code using frequency"""
+    """Match sector description to CLAE 2-digit code"""
     desc_lower = normalize_text(sector_desc).lower()
-    candidates = sector_mapping.get(desc_lower, [])
-    if not candidates:
-        # Try partial matching
-        for key in sector_mapping.keys():
-            if desc_lower in key or key in desc_lower:
-                candidates = sector_mapping[key]
-                break
-    
-    if not candidates:
-        return None
-    
-    # Return most frequent CLAE2 code
-    return Counter(candidates).most_common(1)[0][0]
+    return sector_mapping.get(desc_lower)
 
 
 def load_and_aggregate_salarios(series_path, ipc_data, sector_mapping, years):
@@ -106,11 +89,9 @@ def load_and_aggregate_salarios(series_path, ipc_data, sector_mapping, years):
         df = pd.read_csv(series_path, sep=';', encoding='latin-1')
         print(f"Loaded {len(df)} rows from series data")
         print(f"Sector mapping has {len(sector_mapping)} entries")
-        print("Sample sector keys from mapping:", list(sector_mapping.keys())[:5])
         
         processed = 0
         matched = 0
-        sample_sectors = set()
         
         for _, row in df.iterrows():
             periodo_str = str(row.get('Periodo', '')).strip()
@@ -127,7 +108,6 @@ def load_and_aggregate_salarios(series_path, ipc_data, sector_mapping, years):
             sector_desc = normalize_text(row.get('Sector', ''))
             empleo = to_float(row.get('Empleo'))
             salario = to_float(row.get('Salario'))
-            sample_sectors.add(sector_desc)
             
             processed += 1
             
@@ -154,7 +134,6 @@ def load_and_aggregate_salarios(series_path, ipc_data, sector_mapping, years):
             aggregated[key]['meses_completos'] += 1
         
         print(f"Processed {processed} rows, matched {matched} sectors")
-        print("Sample sectors from data:", list(sample_sectors)[:10])
     
     except Exception as e:
         print(f"Error processing series data: {e}")
