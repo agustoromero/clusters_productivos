@@ -158,7 +158,7 @@ def silhouette_score(matrix, labels):
     return sum(svals) / len(svals)
 
 
-def aggregate_for_clustering(feature_rows, level_geo):
+def aggregate_for_clustering(feature_rows, level_geo, level_activity):
     geo_stats = defaultdict(lambda: {
         "empleo_total": 0.0,
         "establecimientos_total": 0.0,
@@ -171,7 +171,7 @@ def aggregate_for_clustering(feature_rows, level_geo):
         "salario_ponderado_sum": 0.0,
         "empleo_con_salario": 0.0,
         "n_actividades": 0,
-        "top_clae2": None,
+        "top_activity": None,
         "top_share": -1.0
     })
 
@@ -188,7 +188,7 @@ def aggregate_for_clustering(feature_rows, level_geo):
         intensidad = to_float(r["intensidad_export"])
         densidad = to_float(r["densidad_estab"])
         salario = to_float(r["salario_promedio_anual_deflactado"])
-        clae2 = str(r["clae2"])
+        activity = str(r[level_activity])
 
         s = geo_stats[g]
         s["empleo_total"] += empleo
@@ -203,7 +203,7 @@ def aggregate_for_clustering(feature_rows, level_geo):
             s["diversidad"] += 1
         if share > s["top_share"]:
             s["top_share"] = share
-            s["top_clae2"] = clae2
+            s["top_activity"] = activity
         
         # Agregar salario ponderado por empleo
         if salario > 0 and empleo > 0:
@@ -227,7 +227,7 @@ def aggregate_for_clustering(feature_rows, level_geo):
             "intensidad_export_prom": round(s["intensidad_export_sum"] / n, 8),
             "densidad_estab_prom": round(s["densidad_estab_sum"] / n, 8),
             "salario_promedio_ponderado": round(salario_promedio_ponderado, 2),
-            "top_clae2": s["top_clae2"]
+            "top_activity": s["top_activity"]
         }
         if level_geo == "provincia":
             row.update({"provincia_id": g[0], "provincia": g[1]})
@@ -275,7 +275,7 @@ def main():
     for level_geo in cfg["run"]["level_geo"]:
         fpath = os.path.join(cfg["paths"]["marts_dir"], f"features_{level_geo}.csv")
         feature_rows = read_csv(fpath)
-        agg_rows = aggregate_for_clustering(feature_rows, level_geo)
+        agg_rows = aggregate_for_clustering(feature_rows, level_geo, cfg["run"]["level_activity"])
 
         matrix = scale_matrix(agg_rows, feature_vars, cfg["run"]["scale_method"])
         kmin = cfg["run"]["k_min"]

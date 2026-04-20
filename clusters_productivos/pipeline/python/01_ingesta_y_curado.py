@@ -58,16 +58,16 @@ def load_ipc_data(ipc_path):
 
 
 def create_sector_mapping(sector_dim_path):
-    """Create mapping from sector descriptions to CLAE 2-digit codes"""
+    """Create mapping from sector descriptions to CLAE letters (most aggregated level)"""
     # Manual mapping based on standard sector classifications
     manual_mapping = {
-        'agricultura, ganaderia y pesca': '01',
-        'comercio': '47',  # Comercio al por mayor y menor
-        'construccion': '41',  # Construcción de edificios
-        'electricidad, gas y agua': '35',  # Suministro de electricidad y gas
-        'explotacion de minas y canteras': '08',  # Otras actividades de extracción
-        'industria manufacturera': '10',  # Industria alimentaria
-        'servicios': '62',  # Programación y consultoría
+        'agricultura, ganaderia y pesca': 'A',
+        'comercio': 'G',  # Comercio al por mayor y menor
+        'construccion': 'F',  # Construcción
+        'electricidad, gas y agua': 'D',  # Suministro de electricidad y gas
+        'explotacion de minas y canteras': 'B',  # Actividades de extracción
+        'industria manufacturera': 'C',  # Industria manufacturera
+        'servicios': 'N',  # Actividades administrativas y servicios de apoyo
         'sin rama': None
     }
     
@@ -81,8 +81,8 @@ def match_sector_to_clae2(sector_desc, sector_mapping):
 
 
 def load_and_aggregate_salarios(series_path, ipc_data, sector_mapping, years):
-    """Load series data, deflate salaries, and aggregate by province-sector-year"""
-    aggregated = defaultdict(lambda: {'salarios_deflactados': [], 'meses_completos': 0})
+    """Load series data, deflate salaries, and aggregate by province-sector-year with employment-weighted average"""
+    aggregated = defaultdict(lambda: {'salarios_ponderados': 0.0, 'empleo_total': 0.0, 'meses_completos': 0})
     
     try:
         # Read CSV with semicolon delimiter and latin-1 encoding
@@ -114,9 +114,9 @@ def load_and_aggregate_salarios(series_path, ipc_data, sector_mapping, years):
             if not all([id_prov, sector_desc, salario > 0]):
                 continue
             
-            # Match to CLAE2
-            clae2 = match_sector_to_clae2(sector_desc, sector_mapping)
-            if not clae2:
+            # Match to CLAE letter
+            letra = match_sector_to_clae2(sector_desc, sector_mapping)
+            if not letra:
                 continue
             
             matched += 1
@@ -128,9 +128,10 @@ def load_and_aggregate_salarios(series_path, ipc_data, sector_mapping, years):
             
             salario_deflactado = salario * (100.0 / ipc_value)
             
-            # Aggregate by province-sector-year
-            key = (id_prov, clae2, anio)
-            aggregated[key]['salarios_deflactados'].append(salario_deflactado)
+            # Aggregate by province-sector-year with employment weighting
+            key = (id_prov, letra, anio)
+            aggregated[key]['salarios_ponderados'] += salario_deflactado * empleo
+            aggregated[key]['empleo_total'] += empleo
             aggregated[key]['meses_completos'] += 1
         
         print(f"Processed {processed} rows, matched {matched} sectors")
@@ -138,13 +139,13 @@ def load_and_aggregate_salarios(series_path, ipc_data, sector_mapping, years):
     except Exception as e:
         print(f"Error processing series data: {e}")
     
-    # Calculate annual averages (only if >=6 months)
+    # Calculate employment-weighted annual averages (only if >=6 months and employment > 0)
     final_data = {}
     for key, vals in aggregated.items():
-        if vals['meses_completos'] >= 6:
-            salarios = vals['salarios_deflactados']
+        if vals['meses_completos'] >= 6 and vals['empleo_total'] > 0:
+            salario_promedio_ponderado = vals['salarios_ponderados'] / vals['empleo_total']
             final_data[key] = {
-                'salario_promedio_anual_deflactado': sum(salarios) / len(salarios),
+                'salario_promedio_anual_deflactado': salario_promedio_ponderado,
                 'meses_completos': vals['meses_completos']
             }
     
@@ -188,8 +189,8 @@ def curate_main(rows, years, act_idx, salarios_agg):
 
         # Add aggregated salary data if available
         prov_id = row["provincia_id"]
-        clae2 = row["clae2"]
-        sal_key = (prov_id, clae2, anio)
+        letra = row["letra"]
+        sal_key = (prov_id, letra, anio)
         if sal_key in salarios_agg:
             row.update(salarios_agg[sal_key])
         else:
@@ -232,8 +233,8 @@ def curate_gender(rows, years, act_idx, salarios_agg):
         
         # Add aggregated salary data if available
         prov_id = row["provincia_id"]
-        clae2 = row["clae2"]
-        sal_key = (prov_id, clae2, anio)
+        letra = row["letra"]
+        sal_key = (prov_id, letra, anio)
         if sal_key in salarios_agg:
             row.update(salarios_agg[sal_key])
         else:
@@ -303,7 +304,8 @@ def main():
             "estab_curado": len(estab_cur),
             "gender_raw": len(gender_raw),
             "gender_curado": len(gender_cur),
-            "series_raw": len(pd.read_csv(cfg["paths"]["raw_series"], sep=';', encoding='latin-1')) if os.path.exists(cfg["paths"]["raw_series"]) else 0
+            "series_raw": len(pd.read_csv(cfg["paths"]["raw_series"], sep=';', encoding='latin-1')) if os.path.exists(cfg["paths"]["raw_series"]) else 0,
+            "salarios_agregados": len(salarios_agg)
         },
         "duplicates": {
             "estab_grain_anio_depto_clae6": estab_dups,
@@ -314,6 +316,20 @@ def main():
             "in_departamentos": null_share(estab_cur, "in_departamentos"),
             "clae2": null_share(estab_cur, "clae2"),
             "salario_promedio_anual_deflactado": null_share(estab_cur, "salario_promedio_anual_deflactado")
+        },
+        "salarios_coverage": {
+            "provincias_con_salarios": len(set(k[0] for k in salarios_agg.keys())),
+            "sectores_con_salarios": len(set(k[1] for k in salarios_agg.keys())),
+            "años_con_salarios": len(set(k[2] for k in salarios_agg.keys())),
+            "total_provincia_sector_año": len(salarios_agg),
+            "ipc_coverage_years": sorted(list(set(fecha.year for fecha in ipc_data.keys()))) if ipc_data else [],
+            "deflactacion_stats": {
+                "ipc_min": min(ipc_data.values(), key=lambda x: x['ipc'])['ipc'] if ipc_data else None,
+                "ipc_max": max(ipc_data.values(), key=lambda x: x['ipc'])['ipc'] if ipc_data else None,
+                "ipc_mean": sum(v['ipc'] for v in ipc_data.values()) / len(ipc_data) if ipc_data else None,
+                "salarios_deflactados_count": len([v for v in salarios_agg.values() if v['salario_promedio_anual_deflactado'] > 0]),
+                "salarios_no_deflactados": len([v for v in salarios_agg.values() if v['salario_promedio_anual_deflactado'] == 0])
+            }
         }
     }
 
