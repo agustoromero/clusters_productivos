@@ -9,12 +9,10 @@ Este documento detalla el plan end-to-end para incorporar el archivo `departamen
 - Regla de completitud (>=6 meses)
 - Actualización de scripts Python y R (01, 02, 03)
 
-## Preguntas Críticas Pendientes
-Antes de proceder, necesitas responder estas preguntas críticas:
-
-1. **Base de reporte final**: ¿Reescalar los salarios deflactados a 2022 o mantener base 2016?
-2. **Cobertura temporal productiva**: ¿Desde qué año la serie se considera "productiva" por cobertura/calidad?
-3. **Resolución de empates en match sectorial**: ¿Cómo resolver empates cuando múltiples sectores 2d coinciden con la descripción?
+## Respuestas a Preguntas Críticas
+1. **Base de reporte final**: No reescalar, mantener posición relativa en promedio anual para caracterizar clusters mediante niveles salariales relativos inter e intrasectoriales en 2022.
+2. **Cobertura temporal productiva**: Datos productivos de interés son anuales para 2022.
+3. **Resolución de empates en match sectorial**: Mayor frecuencia (elegir el sector 2d más frecuente en coincidencias).
 
 ## Paso a Paso de Implementación
 
