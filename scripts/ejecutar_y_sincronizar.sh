@@ -4,6 +4,7 @@ set -euo pipefail
 SALARIOS_PATH="${1:-data/raw/salarios/departamento_series_empleo_y_salarios_mensual_sector2_0.csv}"
 IPC_PATH="${2:-data/raw/ipc/ipc_indec_base2016.xlsx}"
 OUTDIR="${3:-outputs}"
+ANIO="${4:-}"
 
 if [[ ! -f "$SALARIOS_PATH" ]]; then
   echo "ERROR: no existe archivo de salarios: $SALARIOS_PATH" >&2
@@ -16,7 +17,11 @@ if [[ ! -f "$IPC_PATH" ]]; then
 fi
 
 echo "[1/4] Ejecutando pipeline E2E..."
-python scripts/execute_salarios_e2e.py --salarios "$SALARIOS_PATH" --ipc "$IPC_PATH" --outdir "$OUTDIR"
+if [[ -n "$ANIO" ]]; then
+  python scripts/execute_salarios_e2e.py --salarios "$SALARIOS_PATH" --ipc "$IPC_PATH" --outdir "$OUTDIR" --anio "$ANIO"
+else
+  python scripts/execute_salarios_e2e.py --salarios "$SALARIOS_PATH" --ipc "$IPC_PATH" --outdir "$OUTDIR"
+fi
 
 echo "[2/4] Resumen de calidad..."
 python - <<'PY'

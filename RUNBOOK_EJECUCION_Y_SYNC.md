@@ -9,7 +9,7 @@ mkdir -p data/raw/salarios data/raw/ipc outputs
 ```
 
 ```bash
-python scripts/execute_salarios_e2e.py --salarios data/raw/salarios/departamento_series_empleo_y_salarios_mensual_sector2_0.csv --ipc data/raw/ipc/ipc_indec_base2016.xlsx --outdir outputs
+python scripts/execute_salarios_e2e.py --salarios data/raw/salarios/departamento_series_empleo_y_salarios_mensual_sector2_0.csv --ipc data/raw/ipc/ipc_indec_base2016.xlsx --outdir outputs --anio 2022
 ```
 
 ```bash
@@ -22,7 +22,8 @@ git add PLAN_INTEGRACION_SALARIOS.md RUNBOOK_EJECUCION_Y_SYNC.md scripts/execute
 python scripts/execute_salarios_e2e.py \
   --salarios data/raw/salarios/departamento_series_empleo_y_salarios_mensual_sector2_0.csv \
   --ipc data/raw/ipc/ipc_indec_base2016.xlsx \
-  --outdir outputs
+  --outdir outputs \
+  --anio 2022
 ```
 
 ## 2) Outputs generados
@@ -63,7 +64,8 @@ git push origin <tu-rama>
 bash scripts/ejecutar_y_sincronizar.sh \
   data/raw/salarios/departamento_series_empleo_y_salarios_mensual_sector2_0.csv \
   data/raw/ipc/ipc_indec_base2016.xlsx \
-  outputs
+  outputs \
+  2022
 ```
 
 Si no tenés remoto configurado, primero:

@@ -113,6 +113,7 @@ El problema más crítico es la pérdida de match temporal que deriva en `IPC` n
 
 - filtrar salarios a `anio == 2022` (o `periodo` entre `202201` y `202212`).
 - filtrar IPC a esos mismos 12 meses.
+- en el script actual, usar `--anio 2022` para forzar salida solo 2022.
 
 ## 4.2 Reglas de completitud 2022
 
@@ -203,4 +204,3 @@ Se considera aprobado si:
 3. `% merge exitoso` salarios↔IPC cercano al 100%.
 4. `pct_nan_salario_real_pre_fill` bajo umbral acordado.
 5. Salida anual generada con regla `>=6` meses y sin duplicados de llave.
-
