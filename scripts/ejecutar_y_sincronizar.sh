@@ -37,7 +37,11 @@ print('anios_cubiertos:', q['anios_cubiertos'])
 PY
 
 echo "[3/4] Versionando outputs..."
+
 git add "$OUTDIR"/salarios_mensual_clean.csv "$OUTDIR"/salarios_anual_prov_actividad2d.csv "$OUTDIR"/quality_ingesta.json "$OUTDIR"/quality_sector_anio.csv
+=======
+git add "$OUTDIR"/salarios_mensual_clean.csv "$OUTDIR"/salarios_anual_prov_actividad2d.csv "$OUTDIR"/quality_ingesta.json
+
 if git diff --cached --quiet; then
   echo "Sin cambios en outputs para commitear."
 else

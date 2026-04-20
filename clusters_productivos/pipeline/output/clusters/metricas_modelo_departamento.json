@@ -1,0 +1,20 @@
+{
+  "level_geo": "departamento",
+  "k_optimo": 3,
+  "silhouette": 0.369519,
+  "n_territorios": 527,
+  "features": [
+    "empleo_total",
+    "establecimientos_total",
+    "exportadoras_total",
+    "hhi",
+    "diversidad_sectorial",
+    "max_share_sector",
+    "intensidad_export_prom",
+    "densidad_estab_prom",
+    "salario_promedio_ponderado"
+  ],
+  "run_years": [
+    2022
+  ]
+}

@@ -96,6 +96,7 @@ El problema más crítico es la pérdida de match temporal que deriva en `IPC` n
 - `pct_nan_salario_real_pre_fill` alto,
 - demasiados `salario_const = 0` o `NaN`,
 - caída abrupta de `filas_anuales_validas`.
+
 - sectores con promedio anual 0 (ej. `A` en 2022) aunque exista actividad en fuente original.
 
 Cuando aparece un `promedio anual = 0` para una letra en 2022, revisar en este orden:
@@ -104,6 +105,8 @@ Cuando aparece un `promedio anual = 0` para una letra en 2022, revisar en este o
 2. `quality_sector_anio.csv` (`n_periodos_distintos`, `flag_muestra_baja`, `pct_salario_const_cero`).
 3. `denominador_pond_anual` y `flag_ponderado_sin_muestra` en salida anual.
 4. si hubo imputación/cast a cero previo al merge.
+=======
+
 
 ### 3.3 Chequeos obligatorios para detectar rápido
 
