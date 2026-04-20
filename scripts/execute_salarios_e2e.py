@@ -18,6 +18,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--salarios", required=True, help="Ruta CSV salarios mensual")
     p.add_argument("--ipc", required=True, help="Ruta IPC (csv/xlsx)")
     p.add_argument("--outdir", default="outputs", help="Carpeta de salida")
+    p.add_argument("--anio", type=int, default=None, help="Filtrar procesamiento a un único año (ej: 2022)")
     return p.parse_args()
 
 
@@ -127,6 +128,8 @@ def main() -> None:
         anio = int(periodo[:4]) if periodo[:4].isdigit() else None
         mes = int(periodo[4:6]) if periodo[4:6].isdigit() else None
         if mes is None or mes < 1 or mes > 12:
+            continue
+        if args.anio is not None and anio != args.anio:
             continue
 
         salarios = to_float(r.get("salarios", ""))
