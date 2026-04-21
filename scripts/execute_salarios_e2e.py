@@ -25,7 +25,7 @@ def parse_args() -> argparse.Namespace:
         default="A,B,C,D,E,F,G",
         help="Lista de letras esperadas separadas por coma para controlar cobertura sectorial",
     )
-=======
+
 
     return p.parse_args()
 
@@ -124,7 +124,7 @@ def main() -> None:
     ipc = read_ipc(Path(args.ipc))
 
     sectores_esperados = [s.strip().upper() for s in str(args.sectores_esperados).split(",") if s.strip()]
-=======
+
 
 
     required = {"periodo", "id_prov", "sector", "salarios"}
@@ -202,7 +202,7 @@ def main() -> None:
                 numerador_pond += sc * emp
                 denominador_pond += emp
         promedio_pond = (numerador_pond / denominador_pond) if denominador_pond > 0 else math.nan
-=======
+
 
         row = {
             "id_prov": id_prov,
@@ -215,7 +215,7 @@ def main() -> None:
             "denominador_pond_anual": denominador_pond,
             "flag_cobertura_mensual_baja": n_meses < 6,
             "flag_ponderado_sin_muestra": denominador_pond <= 0,
-=======
+
             "flag_cobertura_mensual_baja": n_meses < 6,
 
         }
@@ -264,7 +264,7 @@ def main() -> None:
         }
         sector_anio_rows.append(row)
 
-=======
+
 
     total = len(monthly) or 1
     pct_ceros = sum(1 for r in monthly if r["salario_const"] == 0) / total
@@ -316,7 +316,7 @@ def main() -> None:
         quality["salarios"]["sectores_faltantes_anio_objetivo"] = sectores_faltantes
         quality["salarios"]["sectores_con_salario_anual_cero_anio_objetivo"] = sectores_anio_cero
         quality["salarios"]["sectores_con_baja_muestra_anio_objetivo"] = sectores_baja_muestra
-=======
+
         }
 
 
@@ -371,7 +371,7 @@ def main() -> None:
             "n_periodos_distintos",
             "n_provincias_distintas",
             "flag_muestra_baja",
-=======
+
             "flag_cobertura_mensual_baja",
 
         ],
