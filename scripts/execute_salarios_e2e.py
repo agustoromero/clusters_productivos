@@ -317,7 +317,7 @@ def main() -> None:
         quality["salarios"]["sectores_con_salario_anual_cero_anio_objetivo"] = sectores_anio_cero
         quality["salarios"]["sectores_con_baja_muestra_anio_objetivo"] = sectores_baja_muestra
 
-        }
+        
 
 
     write_csv(
