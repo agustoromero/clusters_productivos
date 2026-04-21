@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import csv
 import json
+import math
 import os
 import pandas as pd
 from collections import Counter, defaultdict
@@ -37,6 +38,16 @@ def to_float(value):
         return float(value)
     except (TypeError, ValueError):
         return 0.0
+
+
+def sanitize_for_json(obj):
+    if isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [sanitize_for_json(v) for v in obj]
+    if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
+        return None
+    return obj
 
 
 def ensure_dirs(cfg):
@@ -326,7 +337,10 @@ def main():
             "deflactacion_stats": {
                 "ipc_min": min(ipc_data.values(), key=lambda x: x['ipc'])['ipc'] if ipc_data else None,
                 "ipc_max": max(ipc_data.values(), key=lambda x: x['ipc'])['ipc'] if ipc_data else None,
-                "ipc_mean": sum(v['ipc'] for v in ipc_data.values()) / len(ipc_data) if ipc_data else None,
+                "ipc_mean": (
+                    sum(v["ipc"] for v in ipc_data.values() if not pd.isna(v["ipc"])) /
+                    len([v for v in ipc_data.values() if not pd.isna(v["ipc"])])
+                ) if ipc_data and any(not pd.isna(v["ipc"]) for v in ipc_data.values()) else None,
                 "salarios_deflactados_count": len([v for v in salarios_agg.values() if v['salario_promedio_anual_deflactado'] > 0]),
                 "salarios_no_deflactados": len([v for v in salarios_agg.values() if v['salario_promedio_anual_deflactado'] == 0])
             }
@@ -335,7 +349,7 @@ def main():
 
     qpath = os.path.join(cfg["paths"]["quality_dir"], "quality_ingesta.json")
     with open(qpath, "w", encoding="utf-8") as f:
-        json.dump(quality, f, ensure_ascii=False, indent=2)
+        json.dump(sanitize_for_json(quality), f, ensure_ascii=False, indent=2, allow_nan=False)
 
     print(f"Curado OK: {estab_out}, {gender_out}")
     print(f"Reporte calidad: {qpath}")
