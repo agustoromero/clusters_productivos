@@ -107,6 +107,17 @@ def safe_mean(values: Iterable[float]) -> float:
     return sum(vals) / len(vals)
 
 
+def sanitize_for_json(obj):
+    if isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [sanitize_for_json(v) for v in obj]
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+    return obj
+
+
 def write_csv(path: Path, rows: List[Dict[str, object]], columns: List[str]) -> None:
     with path.open("w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=columns)
@@ -210,14 +221,10 @@ def main() -> None:
             "anio": anio,
             "n_meses_observados": n_meses,
             "salario_promedio_anual_const": promedio,
-
             "salario_promedio_anual_pond_const": promedio_pond,
             "denominador_pond_anual": denominador_pond,
             "flag_cobertura_mensual_baja": n_meses < 6,
             "flag_ponderado_sin_muestra": denominador_pond <= 0,
-
-            "flag_cobertura_mensual_baja": n_meses < 6,
-
         }
         if n_meses >= 6:
             annual.append(row)
@@ -317,8 +324,6 @@ def main() -> None:
         quality["salarios"]["sectores_con_salario_anual_cero_anio_objetivo"] = sectores_anio_cero
         quality["salarios"]["sectores_con_baja_muestra_anio_objetivo"] = sectores_baja_muestra
 
-        }
-
 
     write_csv(
         outdir / "salarios_mensual_clean.csv",
@@ -371,15 +376,16 @@ def main() -> None:
             "n_periodos_distintos",
             "n_provincias_distintas",
             "flag_muestra_baja",
-
-            "flag_cobertura_mensual_baja",
-
         ],
     )
-    (outdir / "quality_ingesta.json").write_text(json.dumps(quality, ensure_ascii=False, indent=2), encoding="utf-8")
+    quality_clean = sanitize_for_json(quality)
+    (outdir / "quality_ingesta.json").write_text(
+        json.dumps(quality_clean, ensure_ascii=False, indent=2, allow_nan=False),
+        encoding="utf-8",
+    )
 
     print("=== RESUMEN E2E ===")
-    print(json.dumps(quality, ensure_ascii=False, indent=2))
+    print(json.dumps(quality_clean, ensure_ascii=False, indent=2, allow_nan=False))
 
 
 if __name__ == "__main__":
